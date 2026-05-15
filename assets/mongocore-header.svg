@@ -1,0 +1,84 @@
+<svg width="1280" height="360" viewBox="0 0 1280 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MongoCore">
+<title>MongoCore</title>
+<desc>MongoCore logo: pointed green leaf with a Rust-orange hexagonal core, wordmark, tagline, and feature pills.</desc>
+
+<defs>
+<linearGradient id="leafG" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#4DB33D"/>
+<stop offset="100%" stop-color="#2E7D32"/>
+</linearGradient>
+<linearGradient id="rustG" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#D97706"/>
+<stop offset="100%" stop-color="#A04500"/>
+</linearGradient>
+<clipPath id="leafClip">
+<path d="M120 40 C 190 110, 210 180, 210 220 C 210 270, 170 305, 120 320 C 70 305, 30 270, 30 220 C 30 180, 50 110, 120 40 Z"/>
+</clipPath>
+</defs>
+
+<path d="M120 40 C 190 110, 210 180, 210 220 C 210 270, 170 305, 120 320 C 70 305, 30 270, 30 220 C 30 180, 50 110, 120 40 Z" fill="url(#leafG)"/>
+<g clip-path="url(#leafClip)">
+<line x1="120" y1="40" x2="120" y2="320" stroke="#1B5E20" stroke-width="2.5" opacity="0.4"/>
+<path d="M120 110 Q 160 130, 195 165" stroke="#1B5E20" stroke-width="1.5" fill="none" opacity="0.3"/>
+<path d="M120 110 Q 80 130, 45 165" stroke="#1B5E20" stroke-width="1.5" fill="none" opacity="0.3"/>
+<path d="M120 260 Q 150 280, 175 295" stroke="#1B5E20" stroke-width="1.5" fill="none" opacity="0.3"/>
+<path d="M120 260 Q 90 280, 65 295" stroke="#1B5E20" stroke-width="1.5" fill="none" opacity="0.3"/>
+</g>
+
+<g transform="translate(120 200)">
+<g fill="url(#rustG)">
+<rect x="-5" y="-78" width="10" height="12" rx="2"/>
+<rect x="-5" y="66" width="10" height="12" rx="2"/>
+<g transform="rotate(60)"><rect x="-5" y="-78" width="10" height="12" rx="2"/><rect x="-5" y="66" width="10" height="12" rx="2"/></g>
+<g transform="rotate(120)"><rect x="-5" y="-78" width="10" height="12" rx="2"/><rect x="-5" y="66" width="10" height="12" rx="2"/></g>
+</g>
+<polygon points="60,0 30,51.96 -30,51.96 -60,0 -30,-51.96 30,-51.96" fill="url(#rustG)" stroke="#5A2600" stroke-width="2"/>
+<polygon points="40,0 20,34.64 -20,34.64 -40,0 -20,-34.64 20,-34.64" fill="none" stroke="#FDE68A" stroke-width="2" opacity="0.85"/>
+<circle r="8" fill="#FDE68A"/>
+<circle r="3" fill="#A04500"/>
+<circle cx="60" cy="0" r="4" fill="#FDE68A"/>
+<circle cx="30" cy="51.96" r="4" fill="#FDE68A"/>
+<circle cx="-30" cy="51.96" r="4" fill="#FDE68A"/>
+<circle cx="-60" cy="0" r="4" fill="#FDE68A"/>
+<circle cx="-30" cy="-51.96" r="4" fill="#FDE68A"/>
+<circle cx="30" cy="-51.96" r="4" fill="#FDE68A"/>
+<g stroke="#FDE68A" stroke-width="1.5" opacity="0.55">
+<line x1="0" y1="0" x2="60" y2="0"/>
+<line x1="0" y1="0" x2="30" y2="51.96"/>
+<line x1="0" y1="0" x2="-30" y2="51.96"/>
+<line x1="0" y1="0" x2="-60" y2="0"/>
+<line x1="0" y1="0" x2="-30" y2="-51.96"/>
+<line x1="0" y1="0" x2="30" y2="-51.96"/>
+</g>
+</g>
+
+<line x1="270" y1="100" x2="270" y2="240" stroke="#CBD5E1" stroke-width="1"/>
+
+<text x="310" y="190" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="92" font-weight="500" letter-spacing="-2">
+<tspan fill="#2E7D32">Mongo</tspan><tspan fill="#A04500">Core</tspan>
+</text>
+
+<text x="314" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="400" fill="#475569" letter-spacing="0.5">
+An experimental next-generation MongoDB driver — for humans and agents.
+</text>
+
+<g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="500">
+
+<!-- Row 1 -->
+<g transform="translate(314 254)"><rect width="112" height="28" rx="14" fill="#A04500" fill-opacity="0.12" stroke="#A04500" stroke-width="1"/><text x="56" y="18" text-anchor="middle" fill="#A04500">Rust sidecar</text></g>
+<g transform="translate(434 254)"><rect width="64" height="28" rx="14" fill="#2E7D32" fill-opacity="0.12" stroke="#2E7D32" stroke-width="1"/><text x="32" y="18" text-anchor="middle" fill="#2E7D32">gRPC</text></g>
+<g transform="translate(506 254)"><rect width="60" height="28" rx="14" fill="#1E40AF" fill-opacity="0.12" stroke="#1E40AF" stroke-width="1"/><text x="30" y="18" text-anchor="middle" fill="#1E40AF">MCP</text></g>
+<g transform="translate(574 254)"><rect width="140" height="28" rx="14" fill="#B45309" fill-opacity="0.12" stroke="#B45309" stroke-width="1"/><text x="70" y="18" text-anchor="middle" fill="#B45309">NL → MQL queries</text></g>
+<g transform="translate(722 254)"><rect width="92" height="28" rx="14" fill="#0E7490" fill-opacity="0.12" stroke="#0E7490" stroke-width="1"/><text x="46" y="18" text-anchor="middle" fill="#0E7490">Voyage AI</text></g>
+<g transform="translate(822 254)"><rect width="184" height="28" rx="14" fill="#6B21A8" fill-opacity="0.12" stroke="#6B21A8" stroke-width="1"/><text x="92" y="18" text-anchor="middle" fill="#6B21A8">Vector + full-text search</text></g>
+<g transform="translate(1014 254)"><rect width="132" height="28" rx="14" fill="#475569" fill-opacity="0.12" stroke="#475569" stroke-width="1"/><text x="66" y="18" text-anchor="middle" fill="#475569">Polyglot clients</text></g>
+
+<!-- Row 2 -->
+<g transform="translate(314 292)"><rect width="128" height="28" rx="14" fill="#2E7D32" fill-opacity="0.12" stroke="#2E7D32" stroke-width="1"/><text x="64" y="18" text-anchor="middle" fill="#2E7D32">Change streams</text></g>
+<g transform="translate(450 292)"><rect width="168" height="28" rx="14" fill="#A04500" fill-opacity="0.12" stroke="#A04500" stroke-width="1"/><text x="84" y="18" text-anchor="middle" fill="#A04500">Polars data ingestion</text></g>
+<g transform="translate(626 292)"><rect width="132" height="28" rx="14" fill="#1E40AF" fill-opacity="0.12" stroke="#1E40AF" stroke-width="1"/><text x="66" y="18" text-anchor="middle" fill="#1E40AF">Query analytics</text></g>
+<g transform="translate(766 292)"><rect width="110" height="28" rx="14" fill="#6B21A8" fill-opacity="0.12" stroke="#6B21A8" stroke-width="1"/><text x="55" y="18" text-anchor="middle" fill="#6B21A8">Multi-tenant</text></g>
+<g transform="translate(884 292)"><rect width="128" height="28" rx="14" fill="#0E7490" fill-opacity="0.12" stroke="#0E7490" stroke-width="1"/><text x="64" y="18" text-anchor="middle" fill="#0E7490">OpenTelemetry</text></g>
+
+</g>
+</svg>
