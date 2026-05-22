@@ -15,10 +15,12 @@ const DATA_DIR = join(__dirname, '..', '..', 'data');
 const RESULTS_DIR = join(__dirname, '..', '..', 'results');
 mkdirSync(RESULTS_DIR, { recursive: true });
 
-const WARMUP = CONFIG.warmup_iterations.typescript;
-const MIN_TIME = CONFIG.min_time_secs;
-const MAX_ITERS = CONFIG.max_iterations;
-const MAX_TIME = CONFIG.max_time_secs;
+const QUICK_MODE = process.argv.includes('--quick');
+
+const WARMUP = QUICK_MODE ? 0 : CONFIG.warmup_iterations.typescript;
+const MIN_TIME = QUICK_MODE ? 0 : CONFIG.min_time_secs;
+const MAX_ITERS = QUICK_MODE ? 1 : CONFIG.max_iterations;
+const MAX_TIME = QUICK_MODE ? 5 : CONFIG.max_time_secs;
 const DB_NAME = CONFIG.database;
 const ADDR = CONFIG.mongocore_address;
 

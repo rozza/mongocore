@@ -19,6 +19,10 @@ test-integration:
 test-rust:
     cargo test
 
+# Run binary transport benchmarks (requires running sidecar with binary transport enabled)
+bench-transport *args:
+    cd benchmarks/rust && cargo bench --bench transport_bench {{args}}
+
 # Run Python client tests (unit + integration)
 test-python:
     cd clients/python && python3 -m pytest tests/ -v

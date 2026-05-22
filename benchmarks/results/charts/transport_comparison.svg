@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" font-family="system-ui, sans-serif" font-size="12">
+  <rect width="960" height="380" fill="white"/>
+  <text x="480.0" y="20" text-anchor="middle" font-size="14" font-weight="bold">Transport Comparison: Native vs gRPC vs Binary UDS (Python)</text>
+  <line x1="80" y1="280.0" x2="930" y2="280.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="284.0" text-anchor="end" font-size="11" fill="#6b7280">0</text>
+  <line x1="80" y1="232.0" x2="930" y2="232.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="236.0" text-anchor="end" font-size="11" fill="#6b7280">82K</text>
+  <line x1="80" y1="184.0" x2="930" y2="184.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="188.0" text-anchor="end" font-size="11" fill="#6b7280">164K</text>
+  <line x1="80" y1="136.0" x2="930" y2="136.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="140.0" text-anchor="end" font-size="11" fill="#6b7280">246K</text>
+  <line x1="80" y1="88.0" x2="930" y2="88.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="92.0" text-anchor="end" font-size="11" fill="#6b7280">328K</text>
+  <line x1="80" y1="40.0" x2="930" y2="40.0" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="72" y="44.0" text-anchor="end" font-size="11" fill="#6b7280">410K</text>
+  <text x="15" y="160.0" text-anchor="middle" font-size="11" fill="#6b7280" transform="rotate(-90 15 160.0)">ops/s</text>
+  <rect x="93.28125" y="279.97018270401946" width="21.25" height="0.029817295980511572" fill="#6b7280" rx="2"/>
+  <rect x="119.84375" y="279.98187576126674" width="21.25" height="0.018124238733252133" fill="#3b82f6" rx="2"/>
+  <rect x="146.40625" y="279.98012180267966" width="21.25" height="0.01987819732034105" fill="#10b981" rx="2"/>
+  <text x="133.125" y="298" text-anchor="middle" font-size="10">bulk insert large</text>
+  <rect x="199.53125" y="181.5444579780755" width="21.25" height="98.45554202192449" fill="#6b7280" rx="2"/>
+  <rect x="226.09375" y="225.21802679658953" width="21.25" height="54.78197320341048" fill="#3b82f6" rx="2"/>
+  <rect x="252.65625" y="212.23873325213154" width="21.25" height="67.76126674786846" fill="#10b981" rx="2"/>
+  <text x="239.375" y="298" text-anchor="middle" font-size="10">bulk insert small</text>
+  <rect x="305.78125" y="40.0" width="21.25" height="240.0" fill="#6b7280" rx="2"/>
+  <rect x="332.34375" y="143.48355663824603" width="21.25" height="136.51644336175397" fill="#3b82f6" rx="2"/>
+  <rect x="358.90625" y="99.51766138855055" width="21.25" height="180.48233861144945" fill="#10b981" rx="2"/>
+  <text x="345.625" y="298" text-anchor="middle" font-size="10">find many</text>
+  <rect x="412.03125" y="279.96609013398296" width="21.25" height="0.03390986601705238" fill="#6b7280" rx="2"/>
+  <rect x="438.59375" y="279.97369062119367" width="21.25" height="0.02630937880633374" fill="#3b82f6" rx="2"/>
+  <rect x="465.15625" y="279.97661388550546" width="21.25" height="0.02338611449451888" fill="#10b981" rx="2"/>
+  <text x="451.875" y="298" text-anchor="middle" font-size="10">find many large</text>
+  <rect x="518.28125" y="277.64560292326433" width="21.25" height="2.354397076735688" fill="#6b7280" rx="2"/>
+  <rect x="544.84375" y="278.72954933008526" width="21.25" height="1.2704506699147382" fill="#3b82f6" rx="2"/>
+  <rect x="571.40625" y="279.7123507917174" width="21.25" height="0.2876492082825822" fill="#10b981" rx="2"/>
+  <text x="558.125" y="298" text-anchor="middle" font-size="10">find one by id</text>
+  <rect x="624.53125" y="279.9760292326431" width="21.25" height="0.02397076735688185" fill="#6b7280" rx="2"/>
+  <rect x="651.09375" y="279.97895249695495" width="21.25" height="0.021047503045066994" fill="#3b82f6" rx="2"/>
+  <rect x="677.65625" y="279.98012180267966" width="21.25" height="0.01987819732034105" fill="#10b981" rx="2"/>
+  <text x="664.375" y="298" text-anchor="middle" font-size="10">insert one large</text>
+  <rect x="730.78125" y="277.7292082825822" width="21.25" height="2.2707917174177834" fill="#6b7280" rx="2"/>
+  <rect x="757.34375" y="279.3370036540804" width="21.25" height="0.6629963459196102" fill="#3b82f6" rx="2"/>
+  <rect x="783.90625" y="279.83278928136417" width="21.25" height="0.16721071863581" fill="#10b981" rx="2"/>
+  <text x="770.625" y="298" text-anchor="middle" font-size="10">insert one small</text>
+  <rect x="837.03125" y="277.27084043848964" width="21.25" height="2.7291595615103534" fill="#6b7280" rx="2"/>
+  <rect x="863.59375" y="278.6073568818514" width="21.25" height="1.3926431181485994" fill="#3b82f6" rx="2"/>
+  <rect x="890.15625" y="279.697149817296" width="21.25" height="0.3028501827040195" fill="#10b981" rx="2"/>
+  <text x="876.875" y="298" text-anchor="middle" font-size="10">run command</text>
+  <rect x="90" y="330" width="12" height="12" fill="#6b7280" rx="2"/>
+  <text x="106" y="340" font-size="11" fill="#374151">Native (pymongo)</text>
+  <rect x="300" y="330" width="12" height="12" fill="#3b82f6" rx="2"/>
+  <text x="316" y="340" font-size="11" fill="#374151">gRPC (MongoCore)</text>
+  <rect x="510" y="330" width="12" height="12" fill="#10b981" rx="2"/>
+  <text x="526" y="340" font-size="11" fill="#374151">Binary UDS (MongoCore)</text>
+</svg>

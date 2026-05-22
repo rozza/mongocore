@@ -3,6 +3,8 @@ use serde::Deserialize;
 use std::path::PathBuf;
 
 use crate::defaults::{
+    DEFAULT_BINARY_MAX_CONCURRENT, DEFAULT_BINARY_MAX_FRAME_SIZE, DEFAULT_BINARY_SOCKET_PATH,
+    DEFAULT_BINARY_SOCKET_PERMISSIONS, DEFAULT_BINARY_TRANSPORT_ENABLED,
     DEFAULT_COMPILED_CACHE_SYNC, DEFAULT_CONNECTION_URI, DEFAULT_GRPC_COMPRESSION,
     DEFAULT_GRPC_MAX_MESSAGE_SIZE, DEFAULT_GRPC_PORT, DEFAULT_LOG_LEVEL, DEFAULT_MCP_PORT,
     DEFAULT_OTEL_ENDPOINT, DEFAULT_OTEL_SERVICE_NAME, DEFAULT_PIPELINE_MAX_CONCURRENCY,
@@ -131,6 +133,26 @@ pub struct CliArgs {
     /// Web UI port
     #[arg(long, env = "MONGOCORE_WEB_UI_PORT")]
     pub web_ui_port: Option<u16>,
+
+    /// Binary transport Unix domain socket path
+    #[arg(long, env = "MONGOCORE_BINARY_SOCKET_PATH")]
+    pub binary_socket_path: Option<String>,
+
+    /// Binary transport socket file permissions (octal, e.g. 0600)
+    #[arg(long, env = "MONGOCORE_BINARY_SOCKET_PERMISSIONS")]
+    pub binary_socket_permissions: Option<u32>,
+
+    /// Enable binary transport
+    #[arg(long, env = "MONGOCORE_ENABLE_BINARY")]
+    pub enable_binary_transport: Option<bool>,
+
+    /// Binary transport maximum frame size in bytes
+    #[arg(long, env = "MONGOCORE_BINARY_MAX_FRAME_SIZE")]
+    pub binary_max_frame_size: Option<usize>,
+
+    /// Binary transport maximum concurrent operations
+    #[arg(long, env = "MONGOCORE_BINARY_MAX_CONCURRENT")]
+    pub binary_max_concurrent: Option<usize>,
 }
 
 /// Per-tenant configuration structure.
@@ -258,6 +280,11 @@ pub struct FileConfig {
     pub pipeline_timeout_secs: Option<u64>,
     pub pipeline_max_concurrency: Option<usize>,
     pub web_ui: Option<WebUiFileConfig>,
+    pub binary_socket_path: Option<String>,
+    pub binary_socket_permissions: Option<u32>,
+    pub binary_transport_enabled: Option<bool>,
+    pub binary_max_frame_size: Option<usize>,
+    pub binary_max_concurrent: Option<usize>,
 }
 
 /// Resolved configuration for MongoCore.
@@ -292,6 +319,11 @@ pub struct Config {
     pub pipeline_max_concurrency: usize,
     pub web_ui_enabled: bool,
     pub web_ui_port: u16,
+    pub binary_socket_path: String,
+    pub binary_socket_permissions: u32,
+    pub binary_transport_enabled: bool,
+    pub binary_max_frame_size: usize,
+    pub binary_max_concurrent: usize,
 }
 
 impl Config {
@@ -470,6 +502,28 @@ impl Config {
             .or(web_ui_file.port)
             .unwrap_or(DEFAULT_WEB_UI_PORT);
 
+        let binary_socket_path = cli
+            .binary_socket_path
+            .clone()
+            .or(file_config.binary_socket_path)
+            .unwrap_or_else(|| DEFAULT_BINARY_SOCKET_PATH.to_string());
+        let binary_socket_permissions = cli
+            .binary_socket_permissions
+            .or(file_config.binary_socket_permissions)
+            .unwrap_or(DEFAULT_BINARY_SOCKET_PERMISSIONS);
+        let binary_transport_enabled = cli
+            .enable_binary_transport
+            .or(file_config.binary_transport_enabled)
+            .unwrap_or(DEFAULT_BINARY_TRANSPORT_ENABLED);
+        let binary_max_frame_size = cli
+            .binary_max_frame_size
+            .or(file_config.binary_max_frame_size)
+            .unwrap_or(DEFAULT_BINARY_MAX_FRAME_SIZE);
+        let binary_max_concurrent = cli
+            .binary_max_concurrent
+            .or(file_config.binary_max_concurrent)
+            .unwrap_or(DEFAULT_BINARY_MAX_CONCURRENT);
+
         Ok(Config {
             connection_uri,
             grpc_port,
@@ -500,6 +554,11 @@ impl Config {
             pipeline_max_concurrency,
             web_ui_enabled,
             web_ui_port,
+            binary_socket_path,
+            binary_socket_permissions,
+            binary_transport_enabled,
+            binary_max_frame_size,
+            binary_max_concurrent,
         })
     }
 }
@@ -542,6 +601,11 @@ mod tests {
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
 
         let config = Config::load(&cli).unwrap();
@@ -600,6 +664,11 @@ log_level = "debug"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
 
         let config = Config::load(&cli).unwrap();
@@ -654,6 +723,11 @@ log_level = "debug"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
 
         let config = Config::load(&cli).unwrap();
@@ -698,6 +772,11 @@ log_level = "debug"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
 
         let result = Config::load(&cli);
@@ -754,6 +833,11 @@ connection_uri = "mongodb://other:27017"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
 
         let config = Config::load(&cli).unwrap();
@@ -809,6 +893,11 @@ connection_uri = "mongodb://other:27017"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         }
     }
 
@@ -878,6 +967,11 @@ conflict_strategy = "merge"
             stdio: false,
             web_ui: None,
             web_ui_port: None,
+            binary_socket_path: None,
+            binary_socket_permissions: None,
+            enable_binary_transport: None,
+            binary_max_frame_size: None,
+            binary_max_concurrent: None,
         };
         let config = Config::load(&cli).unwrap();
         assert_eq!(config.ingestion.sample_size, 2000);

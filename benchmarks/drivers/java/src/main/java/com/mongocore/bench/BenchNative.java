@@ -169,9 +169,18 @@ public class BenchNative {
     public static void main(String[] args) throws Exception {
         System.out.println("=== MongoDB Java driver (native) benchmarks ===");
 
+        boolean quickMode = Arrays.asList(args).contains("--quick");
+
         // Load config
         Path configPath = Paths.get("..", "common.json");
         Config config = GSON.fromJson(new FileReader(configPath.toFile()), Config.class);
+
+        if (quickMode) {
+            config.warmup_iterations.put("java", 0);
+            config.min_time_secs = 0;
+            config.max_iterations = 1;
+            config.max_time_secs = 5;
+        }
 
         // Load test documents
         Path dataDir = Paths.get("..", "..", "data");
@@ -313,6 +322,53 @@ public class BenchNative {
                 db -> {},
                 db -> db.getCollection("bench_find_many").drop(),
                 smallSize * 10_000, 10_000, config
+        ));
+
+        // Bulk Insert Large (10 x ~2.75MB docs per iteration)
+        results.add(runBenchmark(
+                "bulk_insert_large", "multi_doc",
+                db -> {},
+                db -> db.getCollection("bench_bulk_large").drop(),
+                db -> {
+                    List<Document> docs = new ArrayList<>(10);
+                    for (int i = 0; i < 10; i++) {
+                        Document doc = new Document("_id", new ObjectId());
+                        largeDoc.forEach((k, v) -> {
+                            if (!k.equals("_id")) doc.append(k, v);
+                        });
+                        docs.add(doc);
+                    }
+                    db.getCollection("bench_bulk_large").insertMany(docs);
+                },
+                db -> {},
+                db -> {},
+                largeSize * 10, 10, config
+        ));
+
+        // Find Many Large (10 x ~2.75MB docs)
+        results.add(runBenchmark(
+                "find_many_large", "multi_doc",
+                db -> {
+                    MongoCollection<Document> coll = db.getCollection("bench_find_many_large");
+                    coll.drop();
+                    List<Document> docs = new ArrayList<>(10);
+                    for (int i = 0; i < 10; i++) {
+                        Document doc = new Document("_id", new ObjectId());
+                        largeDoc.forEach((k, v) -> {
+                            if (!k.equals("_id")) doc.append(k, v);
+                        });
+                        docs.add(doc);
+                    }
+                    coll.insertMany(docs);
+                },
+                db -> {},
+                db -> {
+                    List<Document> result = new ArrayList<>();
+                    db.getCollection("bench_find_many_large").find().into(result);
+                },
+                db -> {},
+                db -> db.getCollection("bench_find_many_large").drop(),
+                largeSize * 10, 10, config
         ));
 
         // Save results

@@ -246,9 +246,17 @@ async fn main() {
         // Start MCP server
         let mcp_handle = start_mcp_server(pool.clone(), config.mcp_port, voyage_api_key.as_deref(), analytics, ingestion_engine, directory_watcher, Some(translator));
 
+        // Start binary transport if enabled
+        let operations = Operations::new(pool.clone());
+        let mut binary_handle = if config.binary_transport_enabled {
+            Some(mongocore::transport::start_binary_transport(&config, pool.clone(), operations))
+        } else {
+            None
+        };
+
         info!("MongoCore started successfully");
 
-        // Wait for either server to exit (they run forever unless something fails)
+        // Wait for any server to exit or ctrl_c for graceful shutdown
         tokio::select! {
             result = grpc_handle => {
                 match result {
@@ -263,6 +271,17 @@ async fn main() {
                     Err(e) => error!("MCP server task panicked: {e}"),
                 }
             }
+            _ = async { if let Some(ref mut h) = binary_handle { (&mut h.task).await.ok(); } } => {
+                error!("Binary transport exited unexpectedly");
+            }
+            _ = tokio::signal::ctrl_c() => {
+                info!("Received ctrl_c, initiating graceful shutdown");
+                // Signal binary transport to shut down gracefully
+                if let Some(ref handle) = binary_handle {
+                    let _ = handle.shutdown_tx.send(true);
+                    info!("Sent shutdown signal to binary transport connections");
+                }
+            }
         }
     }
 
@@ -271,6 +290,14 @@ async fn main() {
         if std::path::Path::new(&config.socket_path).exists() {
             info!("Removing socket file: {}", config.socket_path);
             let _ = std::fs::remove_file(&config.socket_path);
+        }
+    }
+
+    // Clean up binary transport socket on shutdown
+    if config.binary_transport_enabled {
+        if std::path::Path::new(&config.binary_socket_path).exists() {
+            info!("Removing binary socket file: {}", config.binary_socket_path);
+            let _ = std::fs::remove_file(&config.binary_socket_path);
         }
     }
 

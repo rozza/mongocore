@@ -10,7 +10,7 @@ use crate::error::MongoCoreError;
 pub type Result<T> = std::result::Result<T, MongoCoreError>;
 
 /// Options for find operations.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct FindOptions {
     /// Maximum number of documents to return.
     pub limit: Option<i64>,
@@ -69,6 +69,38 @@ impl Operations {
         .map_err(|_| MongoCoreError::TimeoutError("find operation timed out".to_string()))??;
 
         Ok(docs)
+    }
+
+    /// Find multiple documents and return raw BSON bytes directly.
+    ///
+    /// This avoids the Document deserialization/reserialization round-trip by
+    /// using the driver's RawDocumentBuf cursor mode, returning concatenated
+    /// raw BSON bytes suitable for direct transport.
+    pub async fn find_raw(
+        &self,
+        db: &str,
+        collection: &str,
+        filter: Document,
+        options: Option<FindOptions>,
+    ) -> Result<(u32, Vec<u8>)> {
+        let coll = self.pool.collection_raw(db, collection);
+        let driver_opts = options.map(|o| o.to_driver_options());
+
+        let result = timeout(DEFAULT_QUERY_TIMEOUT, async {
+            let mut cursor = coll.find(filter).with_options(driver_opts).await?;
+            let mut count: u32 = 0;
+            let mut raw_bytes = Vec::with_capacity(4096);
+            while cursor.advance().await? {
+                let raw_doc = cursor.deserialize_current()?;
+                raw_bytes.extend_from_slice(raw_doc.as_bytes());
+                count += 1;
+            }
+            Ok::<(u32, Vec<u8>), mongodb::error::Error>((count, raw_bytes))
+        })
+        .await
+        .map_err(|_| MongoCoreError::TimeoutError("find operation timed out".to_string()))??;
+
+        Ok(result)
     }
 
     /// Find documents and return the raw cursor for streaming.

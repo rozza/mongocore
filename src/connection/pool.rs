@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::sync::Mutex;
 
-use bson::{doc, Document};
+use bson::{doc, Document, RawDocumentBuf};
 use mongodb::options::{ClientOptions, DriverInfo, SelectionCriteria};
 use mongodb::{Client, Collection, Database};
 use tracing::info;
@@ -179,6 +179,15 @@ impl ConnectionPool {
         self.client.database(database).collection(collection)
     }
 
+    /// Get a raw BSON collection handle for zero-copy document passthrough.
+    pub fn collection_raw(
+        &self,
+        database: &str,
+        collection: &str,
+    ) -> Collection<RawDocumentBuf> {
+        self.client.database(database).collection(collection)
+    }
+
     /// Get a reference to the underlying `mongodb::Client`.
     pub fn client(&self) -> &Client {
         &self.client
@@ -253,6 +262,11 @@ mod tests {
             pipeline_max_concurrency: 20,
             web_ui_enabled: true,
             web_ui_port: 27999,
+            binary_socket_path: "/tmp/mongocore.bin.sock".to_string(),
+            binary_socket_permissions: 0o600,
+            binary_transport_enabled: true,
+            binary_max_frame_size: 64 * 1024 * 1024,
+            binary_max_concurrent: 64,
         };
 
         let options = ConnectionPool::build_client_options(&config).await.unwrap();
@@ -316,6 +330,11 @@ mod tests {
             pipeline_max_concurrency: 20,
             web_ui_enabled: true,
             web_ui_port: 27999,
+            binary_socket_path: "/tmp/mongocore.bin.sock".to_string(),
+            binary_socket_permissions: 0o600,
+            binary_transport_enabled: true,
+            binary_max_frame_size: 64 * 1024 * 1024,
+            binary_max_concurrent: 64,
         };
 
         let options = ConnectionPool::build_client_options(&config).await.unwrap();
@@ -358,6 +377,11 @@ mod tests {
             pipeline_max_concurrency: 20,
             web_ui_enabled: true,
             web_ui_port: 27999,
+            binary_socket_path: "/tmp/mongocore.bin.sock".to_string(),
+            binary_socket_permissions: 0o600,
+            binary_transport_enabled: true,
+            binary_max_frame_size: 64 * 1024 * 1024,
+            binary_max_concurrent: 64,
         };
 
         let options = ConnectionPool::build_client_options(&config).await.unwrap();
@@ -398,6 +422,11 @@ mod tests {
             pipeline_max_concurrency: 20,
             web_ui_enabled: true,
             web_ui_port: 27999,
+            binary_socket_path: "/tmp/mongocore.bin.sock".to_string(),
+            binary_socket_permissions: 0o600,
+            binary_transport_enabled: true,
+            binary_max_frame_size: 64 * 1024 * 1024,
+            binary_max_concurrent: 64,
         };
 
         let options = ConnectionPool::build_client_options(&config).await.unwrap();

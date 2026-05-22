@@ -102,3 +102,18 @@ pub const DEFAULT_WEB_UI_PORT: u16 = 27999;
 
 /// Whether the Web UI is enabled by default.
 pub const DEFAULT_WEB_UI_ENABLED: bool = true;
+
+/// Default binary transport Unix domain socket path.
+pub const DEFAULT_BINARY_SOCKET_PATH: &str = "/tmp/mongocore.bin.sock";
+
+/// Default binary transport socket file permissions.
+pub const DEFAULT_BINARY_SOCKET_PERMISSIONS: u32 = 0o600;
+
+/// Whether the binary transport is enabled by default.
+pub const DEFAULT_BINARY_TRANSPORT_ENABLED: bool = true;
+
+/// Default maximum frame size for binary transport (64 MB).
+pub const DEFAULT_BINARY_MAX_FRAME_SIZE: usize = 64 * 1024 * 1024;
+
+/// Default maximum concurrent operations for binary transport.
+pub const DEFAULT_BINARY_MAX_CONCURRENT: usize = 64;
