@@ -3,32 +3,32 @@
   <text x="350.0" y="20" text-anchor="middle" font-size="14" font-weight="bold">Sidecar Overhead (% slower than native)</text>
   <line x1="150.0" y1="40" x2="150.0" y2="328" stroke="#e5e7eb" stroke-width="1"/>
   <text x="150.0" y="32" text-anchor="middle" font-size="10" fill="#6b7280">0%</text>
-  <line x1="362.18547902641126" y1="40" x2="362.18547902641126" y2="328" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="362.18547902641126" y="32" text-anchor="middle" font-size="10" fill="#6b7280">20%</text>
-  <line x1="574.3709580528225" y1="40" x2="574.3709580528225" y2="328" stroke="#e5e7eb" stroke-width="1"/>
-  <text x="574.3709580528225" y="32" text-anchor="middle" font-size="10" fill="#6b7280">40%</text>
+  <line x1="378.0381782654442" y1="40" x2="378.0381782654442" y2="328" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="378.0381782654442" y="32" text-anchor="middle" font-size="10" fill="#6b7280">20%</text>
+  <line x1="606.0763565308883" y1="40" x2="606.0763565308883" y2="328" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="606.0763565308883" y="32" text-anchor="middle" font-size="10" fill="#6b7280">40%</text>
   <rect x="150" y="40" width="490.0" height="28" fill="#f97316" rx="3"/>
   <text x="142" y="58.0" text-anchor="end" font-size="11" fill="#374151">insert one small</text>
-  <text x="646.0" y="58.0" font-size="11" fill="#6b7280">46%</text>
-  <rect x="150" y="76" width="437.494439251278" height="28" fill="#f97316" rx="3"/>
-  <text x="142" y="94.0" text-anchor="end" font-size="11" fill="#374151">find many</text>
-  <text x="593.494439251278" y="94.0" font-size="11" fill="#6b7280">41%</text>
-  <rect x="150" y="112" width="434.9488795112888" height="28" fill="#f97316" rx="3"/>
-  <text x="142" y="130.0" text-anchor="end" font-size="11" fill="#374151">find one by id</text>
-  <text x="590.9488795112889" y="130.0" font-size="11" fill="#6b7280">41%</text>
-  <rect x="150" y="148" width="434.6185030017665" height="28" fill="#f97316" rx="3"/>
-  <text x="142" y="166.0" text-anchor="end" font-size="11" fill="#374151">run command</text>
-  <text x="590.6185030017665" y="166.0" font-size="11" fill="#6b7280">41%</text>
-  <rect x="150" y="184" width="253.10246385306925" height="28" fill="#f59e0b" rx="3"/>
+  <text x="646.0" y="58.0" font-size="11" fill="#6b7280">43%</text>
+  <rect x="150" y="76" width="488.5121464512599" height="28" fill="#f97316" rx="3"/>
+  <text x="142" y="94.0" text-anchor="end" font-size="11" fill="#374151">run command</text>
+  <text x="644.5121464512599" y="94.0" font-size="11" fill="#6b7280">43%</text>
+  <rect x="150" y="112" width="486.88170790028676" height="28" fill="#f97316" rx="3"/>
+  <text x="142" y="130.0" text-anchor="end" font-size="11" fill="#374151">find many</text>
+  <text x="642.8817079002868" y="130.0" font-size="11" fill="#6b7280">43%</text>
+  <rect x="150" y="148" width="435.7508698710305" height="28" fill="#f97316" rx="3"/>
+  <text x="142" y="166.0" text-anchor="end" font-size="11" fill="#374151">find one by id</text>
+  <text x="591.7508698710305" y="166.0" font-size="11" fill="#6b7280">38%</text>
+  <rect x="150" y="184" width="343.1601310192265" height="28" fill="#f97316" rx="3"/>
   <text x="142" y="202.0" text-anchor="end" font-size="11" fill="#374151">bulk insert small</text>
-  <text x="409.10246385306925" y="202.0" font-size="11" fill="#6b7280">24%</text>
-  <rect x="150" y="220" width="160.9166772157969" height="28" fill="#f59e0b" rx="3"/>
+  <text x="499.1601310192265" y="202.0" font-size="11" fill="#6b7280">30%</text>
+  <rect x="150" y="220" width="250.94612311402756" height="28" fill="#f59e0b" rx="3"/>
   <text x="142" y="238.0" text-anchor="end" font-size="11" fill="#374151">find many large</text>
-  <text x="316.9166772157969" y="238.0" font-size="11" fill="#6b7280">15%</text>
-  <rect x="150" y="256" width="157.96504474803262" height="28" fill="#f59e0b" rx="3"/>
+  <text x="406.94612311402756" y="238.0" font-size="11" fill="#6b7280">22%</text>
+  <rect x="150" y="256" width="222.94619721787546" height="28" fill="#f59e0b" rx="3"/>
   <text x="142" y="274.0" text-anchor="end" font-size="11" fill="#374151">bulk insert large</text>
-  <text x="313.9650447480326" y="274.0" font-size="11" fill="#6b7280">15%</text>
-  <rect x="150" y="292" width="120.47160897103932" height="28" fill="#f59e0b" rx="3"/>
+  <text x="378.94619721787546" y="274.0" font-size="11" fill="#6b7280">20%</text>
+  <rect x="150" y="292" width="139.3894427301713" height="28" fill="#f59e0b" rx="3"/>
   <text x="142" y="310.0" text-anchor="end" font-size="11" fill="#374151">insert one large</text>
-  <text x="276.4716089710393" y="310.0" font-size="11" fill="#6b7280">11%</text>
+  <text x="295.3894427301713" y="310.0" font-size="11" fill="#6b7280">12%</text>
 </svg>

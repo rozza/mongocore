@@ -132,6 +132,7 @@ bench-all:
     echo ">>> Running driver benchmarks..."
     just _bench-python-native
     just _bench-python-mongocore
+    just _bench-python-binary
     just _bench-typescript-native
     just _bench-typescript-mongocore
     just _bench-go-native
@@ -176,13 +177,14 @@ bench-clean:
 bench-report:
     pip install -r requirements.txt -q && python generate_results.py
 
-# All driver benchmarks (native + MongoCore, all languages)
+# All driver benchmarks (native + MongoCore gRPC + binary, all languages)
 bench-drivers: require-setup
     #!/usr/bin/env bash
     set -e
     cd {{justfile_directory()}}
     just _bench-python-native
     just _bench-python-mongocore
+    just _bench-python-binary
     just _bench-typescript-native
     just _bench-typescript-mongocore
     just _bench-go-native
@@ -214,13 +216,21 @@ bench-drivers-mongocore: require-setup
     just _bench-go-mongocore
     just _bench-java-mongocore
 
-# Python: both native and MongoCore
+# All binary transport benchmarks
+bench-drivers-binary: require-setup
+    #!/usr/bin/env bash
+    set -e
+    cd {{justfile_directory()}}
+    just _bench-python-binary
+
+# Python: native, MongoCore gRPC, and binary
 bench-python: require-setup
     #!/usr/bin/env bash
     set -e
     cd {{justfile_directory()}}
     just _bench-python-native
     just _bench-python-mongocore
+    just _bench-python-binary
     just _bench-python-pipeline
 
 # Python: native pymongo only
@@ -236,6 +246,13 @@ bench-python-mongocore: require-setup
     set -e
     cd {{justfile_directory()}}
     just _bench-python-mongocore
+
+# Python: MongoCore binary UDS transport
+bench-python-binary: require-setup
+    #!/usr/bin/env bash
+    set -e
+    cd {{justfile_directory()}}
+    just _bench-python-binary
 
 # TypeScript: both native and MongoCore
 bench-typescript: require-setup
@@ -366,6 +383,66 @@ bench-compiled: require-setup
     cd {{justfile_directory()}}
     just _bench-compiled
 
+# Quick validation — run each benchmark with 1 iteration to verify they complete without error
+bench-validate: require-setup
+    #!/usr/bin/env bash
+    set -e
+    cd {{justfile_directory()}}
+    echo ">>> Validating benchmarks (--quick mode: 1 iteration each)..."
+    echo ""
+    echo "--- Python ---"
+    cd {{justfile_directory()}}/drivers/python && pip install -r requirements.txt -q
+    echo "  Validating bench_native..."
+    python bench_native.py --quick
+    echo "  Validating bench_mongocore..."
+    python bench_mongocore.py --quick
+    echo "  Validating bench_binary..."
+    python bench_binary.py --quick
+    echo "  Validating bench_pipeline..."
+    python bench_pipeline.py --quick
+    echo "  Validating bench_native_txn..."
+    python bench_native_txn.py --quick
+    echo "  Validating bench_txn_pipeline..."
+    python bench_txn_pipeline.py --quick
+    echo "  Validating bench_compiled..."
+    python bench_compiled.py --quick
+    echo ""
+    echo "--- TypeScript ---"
+    cd {{justfile_directory()}}/drivers/typescript && npm install --silent
+    echo "  Validating bench_native..."
+    npx ts-node bench_native.ts --quick
+    echo "  Validating bench_mongocore..."
+    npx ts-node bench_mongocore.ts --quick
+    echo "  Validating bench_pipeline..."
+    npx ts-node bench_pipeline.ts --quick
+    echo ""
+    echo "--- Go ---"
+    cd {{justfile_directory()}}/drivers/go
+    echo "  Validating bench_native..."
+    go run bench_native.go --quick
+    echo "  Validating bench_mongocore..."
+    go run bench_mongocore.go --quick
+    echo "  Validating bench_pipeline..."
+    go run bench_pipeline.go --quick
+    echo ""
+    echo "--- Java ---"
+    echo "  Installing Java client JAR..."
+    cd {{root}}/clients/java && mvn -q install -DskipTests
+    cd {{justfile_directory()}}/drivers/java
+    echo "  Validating BenchNative..."
+    mvn -q compile exec:java -Dexec.mainClass="com.mongocore.bench.BenchNative" -Dexec.args="--quick"
+    echo "  Validating BenchMongocore..."
+    mvn -q compile exec:java -Dexec.mainClass="com.mongocore.bench.BenchMongocore" -Dexec.args="--quick"
+    echo "  Validating BenchPipeline..."
+    mvn -q compile exec:java -Dexec.mainClass="com.mongocore.bench.BenchPipeline" -Dexec.args="--quick"
+    echo ""
+    echo "--- Ingestion ---"
+    cd {{justfile_directory()}}/ingestion
+    echo "  Validating bench_ingest..."
+    python bench_ingest.py --quick
+    echo ""
+    echo ">>> All benchmarks validated successfully"
+
 # Generate test data for ingestion benchmarks
 bench-generate-data:
     cd ingestion && python generate_data.py
@@ -471,3 +548,9 @@ _bench-python-txn-pipeline:
     #!/usr/bin/env bash
     if [ -f {{results_dir}}/python_txn_pipeline.json ]; then echo "  Skipping python-txn-pipeline (results exist)"; exit 0; fi
     cd drivers/python && pip install -r requirements.txt -q && python bench_txn_pipeline.py
+
+[private]
+_bench-python-binary:
+    #!/usr/bin/env bash
+    if [ -f {{results_dir}}/python_binary.json ]; then echo "  Skipping python-binary (results exist)"; exit 0; fi
+    cd drivers/python && pip install -r requirements.txt -q && python bench_binary.py

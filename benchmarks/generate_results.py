@@ -37,7 +37,8 @@ def format_ops(ops_per_sec):
 def driver_label(driver):
     labels = {
         "pymongo": "Python (pymongo)",
-        "mongocore+python": "Python (MongoCore)",
+        "mongocore+python": "Python (MongoCore gRPC)",
+        "mongocore+python+binary": "Python (MongoCore Binary)",
         "mongodb-node": "TypeScript (native)",
         "mongocore+typescript": "TypeScript (MongoCore)",
         "mongo-go-driver": "Go (native)",
@@ -51,6 +52,8 @@ def driver_label(driver):
 DRIVER_TO_LANGUAGE = {
     "pymongo": "python",
     "mongocore+python": "python",
+    "mongocore+python+binary": "python",
+    "mongocore+binary": "python",
     "mongodb-node": "typescript",
     "mongocore+typescript": "typescript",
     "mongo-go-driver": "go",
@@ -66,6 +69,116 @@ def get_language(driver):
 
 def is_native(driver):
     return "mongocore" not in driver.lower()
+
+
+def is_binary(driver):
+    return "binary" in driver.lower()
+
+
+def build_transport_comparison_rows(all_results):
+    """Build 3-way comparison: native vs gRPC vs binary (Python only since it has all 3)."""
+    benchmarks = sorted(set(r["benchmark"] for r in all_results
+                           if get_language(r["driver"]) == "python" or r["driver"] == "pymongo"))
+    rows = []
+    for bench in benchmarks:
+        native = next((r for r in all_results if r["benchmark"] == bench and r["driver"] == "pymongo"), None)
+        grpc = next((r for r in all_results if r["benchmark"] == bench and r["driver"] == "mongocore+python"), None)
+        binary = next((r for r in all_results if r["benchmark"] == bench and r["driver"] == "mongocore+python+binary"), None)
+
+        if not (native and grpc and binary):
+            continue
+
+        # Binary vs gRPC improvement
+        improvement = ((binary["ops_per_sec"] - grpc["ops_per_sec"]) / grpc["ops_per_sec"]) * 100
+
+        rows.append({
+            "operation": bench,
+            "native": format_ops(native["ops_per_sec"]),
+            "grpc": format_ops(grpc["ops_per_sec"]),
+            "binary": format_ops(binary["ops_per_sec"]),
+            "binary_vs_grpc": f"+{improvement:.0f}%" if improvement > 0 else f"{improvement:.0f}%",
+            "binary_vs_native_pct": ((native["ops_per_sec"] - binary["ops_per_sec"]) / native["ops_per_sec"]) * 100,
+        })
+    return rows
+
+
+def generate_transport_chart(rows):
+    """Generate SVG grouped bar chart with 3 bars (native/gRPC/binary) per operation."""
+    if not rows:
+        return None
+
+    CHARTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    num_groups = len(rows)
+    chart_width = max(700, num_groups * 120)
+    chart_height = 380
+    margin_left = 80
+    margin_right = 30
+    margin_top = 40
+    margin_bottom = 100
+    plot_width = chart_width - margin_left - margin_right
+    plot_height = chart_height - margin_top - margin_bottom
+
+    # Parse ops values back from formatted strings
+    def parse_ops(s):
+        if s.endswith("K"):
+            return float(s[:-1]) * 1000
+        return float(s)
+
+    group_width = plot_width / num_groups
+    bar_width = group_width / 4
+    colors = ["#6b7280", "#3b82f6", "#10b981"]  # gray=native, blue=gRPC, green=binary
+
+    max_val = max(max(parse_ops(r["native"]), parse_ops(r["grpc"]), parse_ops(r["binary"])) for r in rows)
+    y_scale = plot_height / max_val
+
+    svg = []
+    svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {chart_width} {chart_height}" font-family="system-ui, sans-serif" font-size="12">')
+    svg.append(f'  <rect width="{chart_width}" height="{chart_height}" fill="white"/>')
+    svg.append(f'  <text x="{chart_width/2}" y="20" text-anchor="middle" font-size="14" font-weight="bold">Transport Comparison: Native vs gRPC vs Binary UDS (Python)</text>')
+
+    # Y-axis
+    num_ticks = 5
+    for i in range(num_ticks + 1):
+        y_val = max_val * i / num_ticks
+        y_pos = margin_top + plot_height - (y_val * y_scale)
+        svg.append(f'  <line x1="{margin_left}" y1="{y_pos}" x2="{chart_width - margin_right}" y2="{y_pos}" stroke="#e5e7eb" stroke-width="1"/>')
+        label = f"{y_val/1000:.0f}K" if y_val >= 1000 else f"{y_val:.0f}"
+        svg.append(f'  <text x="{margin_left - 8}" y="{y_pos + 4}" text-anchor="end" font-size="11" fill="#6b7280">{label}</text>')
+
+    # Y-axis label
+    svg.append(f'  <text x="15" y="{margin_top + plot_height/2}" text-anchor="middle" font-size="11" fill="#6b7280" transform="rotate(-90 15 {margin_top + plot_height/2})">ops/s</text>')
+
+    # Bars
+    for g_idx, row in enumerate(rows):
+        group_x = margin_left + g_idx * group_width
+        vals = [parse_ops(row["native"]), parse_ops(row["grpc"]), parse_ops(row["binary"])]
+
+        for b_idx, (val, color) in enumerate(zip(vals, colors)):
+            x = group_x + (b_idx + 0.5) * bar_width
+            bar_h = val * y_scale
+            y = margin_top + plot_height - bar_h
+            svg.append(f'  <rect x="{x}" y="{y}" width="{bar_width * 0.8}" height="{bar_h}" fill="{color}" rx="2"/>')
+
+        # Label
+        label = row["operation"].replace("_", " ")
+        label_x = group_x + group_width / 2
+        svg.append(f'  <text x="{label_x}" y="{margin_top + plot_height + 18}" text-anchor="middle" font-size="10">{label}</text>')
+
+    # Legend
+    legend_x = margin_left + 10
+    legend_y = margin_top + plot_height + 50
+    legend_labels = ["Native (pymongo)", "gRPC (MongoCore)", "Binary UDS (MongoCore)"]
+    for i, (color, label) in enumerate(zip(colors, legend_labels)):
+        x = legend_x + i * 210
+        svg.append(f'  <rect x="{x}" y="{legend_y}" width="12" height="12" fill="{color}" rx="2"/>')
+        svg.append(f'  <text x="{x + 16}" y="{legend_y + 10}" font-size="11" fill="#374151">{label}</text>')
+
+    svg.append('</svg>')
+
+    chart_path = CHARTS_DIR / "transport_comparison.svg"
+    chart_path.write_text("\n".join(svg))
+    return chart_path
 
 
 def generate_overhead_chart(single_doc_results, multi_doc_results):
@@ -86,7 +199,7 @@ def generate_overhead_chart(single_doc_results, multi_doc_results):
         mc_ops = []
         for lang in languages:
             n = next((r for r in all_results if r["benchmark"] == bench and get_language(r["driver"]) == lang and is_native(r["driver"])), None)
-            m = next((r for r in all_results if r["benchmark"] == bench and get_language(r["driver"]) == lang and not is_native(r["driver"])), None)
+            m = next((r for r in all_results if r["benchmark"] == bench and get_language(r["driver"]) == lang and not is_native(r["driver"]) and not is_binary(r["driver"])), None)
             if n and m:
                 native_ops.append(n["ops_per_sec"])
                 mc_ops.append(m["ops_per_sec"])
@@ -362,47 +475,53 @@ def generate_pipeline_chart(pipeline_results, single_doc_results):
     return chart_path
 
 
-def build_comparison_rows(cat_results):
-    """Build one row per benchmark with all languages as columns."""
-    rows = []
-    benchmarks = sorted(set(r["benchmark"] for r in cat_results))
+def build_per_language_tables(all_results):
+    """Build per-language comparison tables: Native vs gRPC vs Binary."""
     languages = ["python", "typescript", "go", "java"]
+    benchmarks = sorted(set(r["benchmark"] for r in all_results))
 
-    for bench in benchmarks:
-        lang_ops = {}
-        native_values = []
+    tables = {}
+    for lang in languages:
+        rows = []
+        for bench in benchmarks:
+            native = next((r for r in all_results if r["benchmark"] == bench
+                          and get_language(r["driver"]) == lang and is_native(r["driver"])), None)
+            grpc = next((r for r in all_results if r["benchmark"] == bench
+                        and get_language(r["driver"]) == lang and not is_native(r["driver"]) and not is_binary(r["driver"])), None)
+            binary = next((r for r in all_results if r["benchmark"] == bench
+                          and get_language(r["driver"]) == lang and is_binary(r["driver"])), None)
 
-        for lang in languages:
-            mc = next((r for r in cat_results if r["benchmark"] == bench and get_language(r["driver"]) == lang and not is_native(r["driver"])), None)
-            native = next((r for r in cat_results if r["benchmark"] == bench and get_language(r["driver"]) == lang and is_native(r["driver"])), None)
+            if not native and not grpc:
+                continue
 
-            lang_ops[lang] = format_ops(mc["ops_per_sec"]) if mc else "—"
-            if native:
-                native_values.append(native["ops_per_sec"])
+            native_ops = native["ops_per_sec"] if native else None
+            grpc_ops = grpc["ops_per_sec"] if grpc else None
+            binary_ops = binary["ops_per_sec"] if binary else None
 
-        fastest_native = max(native_values) if native_values else None
-        native_str = format_ops(fastest_native) if fastest_native else "—"
+            # Compute % vs native
+            grpc_pct = ""
+            if native_ops and grpc_ops:
+                pct = ((grpc_ops - native_ops) / native_ops) * 100
+                grpc_pct = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
 
-        # Overhead: average MongoCore vs fastest native
-        mc_values = [r["ops_per_sec"] for r in cat_results if r["benchmark"] == bench and not is_native(r["driver"])]
-        avg_mc = sum(mc_values) / len(mc_values) if mc_values else 0
+            binary_pct = ""
+            if native_ops and binary_ops:
+                pct = ((binary_ops - native_ops) / native_ops) * 100
+                binary_pct = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
 
-        if fastest_native and avg_mc:
-            overhead = ((fastest_native - avg_mc) / fastest_native) * 100
-            overhead_str = f"+{overhead:.0f}%" if overhead > 0 else f"{overhead:.0f}%"
-        else:
-            overhead_str = "—"
+            rows.append({
+                "operation": bench,
+                "native": format_ops(native_ops) if native_ops else "—",
+                "grpc": format_ops(grpc_ops) if grpc_ops else "—",
+                "binary": format_ops(binary_ops) if binary_ops else "—",
+                "grpc_pct": grpc_pct or "—",
+                "binary_pct": binary_pct or "—",
+            })
 
-        rows.append({
-            "operation": bench,
-            "python": lang_ops["python"],
-            "typescript": lang_ops["typescript"],
-            "go": lang_ops["go"],
-            "java": lang_ops["java"],
-            "native": native_str,
-            "overhead": overhead_str,
-        })
-    return rows
+        if rows:
+            tables[lang] = rows
+
+    return tables
 
 
 def build_pipeline_rows(pipeline_results, single_doc_results):
@@ -446,7 +565,8 @@ def build_pipeline_rows(pipeline_results, single_doc_results):
         avg_pipeline = sum(pipeline_ops_values) / len(pipeline_ops_values) if pipeline_ops_values else 0
 
         if fastest_native and avg_pipeline:
-            speedup_str = f"{avg_pipeline / fastest_native:.1f}x"
+            pct = ((avg_pipeline - fastest_native) / fastest_native) * 100
+            speedup_str = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
         else:
             speedup_str = "—"
 
@@ -569,8 +689,8 @@ def build_txn_pipeline_rows(txn_results):
         mc_ops = mc["ops_per_sec"] if mc else None
 
         if native_ops and mc_ops:
-            speedup = mc_ops / native_ops
-            speedup_str = f"{speedup:.1f}x"
+            pct = ((mc_ops - native_ops) / native_ops) * 100
+            speedup_str = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
         else:
             speedup_str = "—"
 
@@ -584,27 +704,31 @@ def build_txn_pipeline_rows(txn_results):
 
 
 def build_ingestion_rows(ingestion_results):
-    """Build ingestion table rows: one row per scenario+size, MC vs native side by side."""
+    """Build ingestion table rows: one row per scenario+size, MC vs native vs binary side by side."""
     sizes = ["10k", "100k", "500k"]
     formats = ["csv", "ndjson"]
     scenarios = [
-        ("ingest", "mongocore_ingest_", "native_bulk_"),
-        ("ingest + transform", "mongocore_transform_", "native_transform_"),
+        ("ingest", "mongocore_ingest_", "native_bulk_", "binary_bulk_"),
+        ("ingest + transform", "mongocore_transform_", "native_transform_", ""),
     ]
 
     rows = []
-    for scenario_label, mc_prefix, native_prefix in scenarios:
+    for scenario_label, mc_prefix, native_prefix, binary_prefix in scenarios:
         for size in sizes:
             for fmt in formats:
                 mc = next((r for r in ingestion_results if r["benchmark"] == f"{mc_prefix}{size}_{fmt}"), None)
                 native = next((r for r in ingestion_results if r["benchmark"] == f"{native_prefix}{size}_{fmt}"), None)
+                binary = next((r for r in ingestion_results if binary_prefix and r["benchmark"] == f"{binary_prefix}{size}_{fmt}"), None)
 
                 mc_mbps = mc["mb_per_sec"] if mc else None
                 native_mbps = native["mb_per_sec"] if native else None
+                binary_mbps = binary["mb_per_sec"] if binary else None
 
-                if mc_mbps and native_mbps and native_mbps > 0:
-                    speedup = mc_mbps / native_mbps
-                    speedup_str = f"{speedup:.1f}x"
+                # Best speedup: max of mc and binary vs native
+                best_mbps = max(filter(None, [mc_mbps, binary_mbps]), default=None)
+                if best_mbps and native_mbps and native_mbps > 0:
+                    pct = ((best_mbps - native_mbps) / native_mbps) * 100
+                    speedup_str = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
                 else:
                     speedup_str = "—"
 
@@ -614,6 +738,7 @@ def build_ingestion_rows(ingestion_results):
                     "size": size,
                     "mc_mbps": f"{mc_mbps:.2f}" if mc_mbps else "—",
                     "native_mbps": f"{native_mbps:.2f}" if native_mbps else "—",
+                    "binary_mbps": f"{binary_mbps:.2f}" if binary_mbps else "—",
                     "speedup": speedup_str,
                 })
     return rows
@@ -636,6 +761,11 @@ def generate():
     ingestion_results = groups.get("ingestion", [])
     txn_pipeline_results = groups.get("txn_pipeline", [])
 
+    # Build transport comparison chart (3-way: native vs gRPC vs binary)
+    transport_comparison = build_transport_comparison_rows(single_doc_results + multi_doc_results)
+    transport_chart = generate_transport_chart(transport_comparison)
+    del transport_comparison  # Only used for chart generation
+
     # Generate charts
     overhead_chart = generate_overhead_chart(single_doc_results, multi_doc_results)
     pipeline_chart = generate_pipeline_chart(pipeline_results, single_doc_results)
@@ -648,16 +778,17 @@ def generate():
     # Build template data
     system = next((r.get("system", {}) for r in results if r.get("system")), {})
 
-    # Combine single-doc and multi-doc into one table
-    driver_ops = build_comparison_rows(single_doc_results) + build_comparison_rows(multi_doc_results)
+    # Build per-language tables (Native vs gRPC vs Binary)
+    language_tables = build_per_language_tables(single_doc_results + multi_doc_results)
 
     context = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "transport_chart": rel(transport_chart),
         "overhead_chart": rel(overhead_chart),
         "pipeline_chart": rel(pipeline_chart),
         "ingestion_chart": rel(ingestion_chart),
         "txn_pipeline_chart": rel(txn_pipeline_chart),
-        "driver_ops": driver_ops,
+        "language_tables": language_tables,
         "pipeline": build_pipeline_rows(pipeline_results, single_doc_results),
         "txn_pipeline": build_txn_pipeline_rows(txn_pipeline_results),
         "ingestion": build_ingestion_rows(ingestion_results),

@@ -1,0 +1,22 @@
+[
+  {
+    "benchmark": "compiled_cache_hit",
+    "category": "compiled_query",
+    "driver": "mongocore+python",
+    "dataset_size_bytes": 0,
+    "batch_size": 1,
+    "iterations": 1,
+    "total_time_secs": 0.003,
+    "ops_per_sec": 344.2,
+    "mb_per_sec": 0,
+    "percentiles": {
+      "p50": 0.002905,
+      "p99": 0.002905
+    },
+    "timestamp": "2026-05-22T13:23:33.810858+00:00",
+    "system": {
+      "driver": "mongocore+python",
+      "operation": "compiled_cache_hit"
+    }
+  }
+]

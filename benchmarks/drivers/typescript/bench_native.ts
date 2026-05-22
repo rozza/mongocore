@@ -14,10 +14,12 @@ const DATA_DIR = join(__dirname, '..', '..', 'data');
 const RESULTS_DIR = join(__dirname, '..', '..', 'results');
 mkdirSync(RESULTS_DIR, { recursive: true });
 
-const WARMUP = CONFIG.warmup_iterations.typescript;
-const MIN_TIME = CONFIG.min_time_secs;
-const MAX_ITERS = CONFIG.max_iterations;
-const MAX_TIME = CONFIG.max_time_secs;
+const QUICK_MODE = process.argv.includes('--quick');
+
+const WARMUP = QUICK_MODE ? 0 : CONFIG.warmup_iterations.typescript;
+const MIN_TIME = QUICK_MODE ? 0 : CONFIG.min_time_secs;
+const MAX_ITERS = QUICK_MODE ? 1 : CONFIG.max_iterations;
+const MAX_TIME = QUICK_MODE ? 5 : CONFIG.max_time_secs;
 const DB_NAME = CONFIG.database;
 
 interface SystemInfo {
@@ -264,6 +266,42 @@ async function main() {
       await client.db(DB_NAME).collection('bench_find_many').drop().catch(() => {});
     },
     smallSize * 10_000, 10_000,
+  ));
+
+  // Bulk Insert Large (10 x ~2.75MB docs per iteration)
+  results.push(await runBenchmark(
+    'bulk_insert_large', 'multi_doc',
+    async (_client) => {},
+    async (client) => {
+      await client.db(DB_NAME).collection('bench_bulk_large').drop().catch(() => {});
+    },
+    async (client) => {
+      const docs = Array.from({ length: 10 }, () => ({ ...largeDoc, _id: new ObjectId() }));
+      await client.db(DB_NAME).collection('bench_bulk_large').insertMany(docs);
+    },
+    async (_client) => {},
+    async (_client) => {},
+    largeSize * 10, 10,
+  ));
+
+  // Find Many Large (10 x ~2.75MB docs)
+  results.push(await runBenchmark(
+    'find_many_large', 'multi_doc',
+    async (client) => {
+      const coll = client.db(DB_NAME).collection('bench_find_many_large');
+      await coll.drop().catch(() => {});
+      const docs = Array.from({ length: 10 }, () => ({ ...largeDoc, _id: new ObjectId() }));
+      await coll.insertMany(docs);
+    },
+    async (_client) => {},
+    async (client) => {
+      await client.db(DB_NAME).collection('bench_find_many_large').find({}).toArray();
+    },
+    async (_client) => {},
+    async (client) => {
+      await client.db(DB_NAME).collection('bench_find_many_large').drop().catch(() => {});
+    },
+    largeSize * 10, 10,
   ));
 
   // Save results

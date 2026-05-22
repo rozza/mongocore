@@ -183,6 +183,15 @@ func runBenchmark(
 	return result
 }
 
+func isQuickMode() bool {
+	for _, arg := range os.Args[1:] {
+		if arg == "--quick" {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	fmt.Println("=== MongoCore+Go benchmarks ===")
 
@@ -195,6 +204,13 @@ func main() {
 	var config Config
 	if err := json.Unmarshal(configBytes, &config); err != nil {
 		panic(err)
+	}
+
+	if isQuickMode() {
+		config.WarmupIters["go"] = 0
+		config.MinTimeSecs = 0
+		config.MaxIterations = 1
+		config.MaxTimeSecs = 5
 	}
 
 	// Load test documents

@@ -15,10 +15,12 @@ const DATA_DIR = join(__dirname, '..', '..', 'data');
 const RESULTS_DIR = join(__dirname, '..', '..', 'results');
 mkdirSync(RESULTS_DIR, { recursive: true });
 
-const WARMUP = CONFIG.warmup_iterations.typescript;
-const MIN_TIME = CONFIG.min_time_secs;
-const MAX_ITERS = CONFIG.max_iterations;
-const MAX_TIME = CONFIG.max_time_secs;
+const QUICK_MODE = process.argv.includes('--quick');
+
+const WARMUP = QUICK_MODE ? 0 : CONFIG.warmup_iterations.typescript;
+const MIN_TIME = QUICK_MODE ? 0 : CONFIG.min_time_secs;
+const MAX_ITERS = QUICK_MODE ? 1 : CONFIG.max_iterations;
+const MAX_TIME = QUICK_MODE ? 5 : CONFIG.max_time_secs;
 const DB_NAME = CONFIG.database;
 const ADDR = CONFIG.mongocore_address;
 
@@ -236,8 +238,40 @@ async function main() {
     smallSize * 2_000, 2_000,
   ));
 
-  console.log('  bulk_insert_large: SKIPPED (exceeds gRPC 4MB message limit)');
-  console.log('  find_many_large: SKIPPED (response exceeds gRPC 4MB message limit)');
+  // Bulk Insert Large (10 x ~2.75MB docs — enabled with 64MB message limit)
+  const bulkLargeColl = client.db(DB_NAME).collection('bench_bulk_large_ts_mc');
+  results.push(await runBenchmark(
+    'bulk_insert_large', 'multi_doc',
+    async () => {},
+    async () => {
+      await client.runCommand(DB_NAME, { drop: 'bench_bulk_large_ts_mc' }).catch(() => {});
+    },
+    async () => {
+      const docs = Array.from({ length: 10 }, () => ({ ...largeDoc, _id: newId() }));
+      await bulkLargeColl.insertMany(docs);
+    },
+    async () => {},
+    async () => {},
+    largeSize * 10, 10,
+  ));
+
+  // Find Many Large (10 x ~2.75MB docs — enabled with 64MB message limit)
+  const findManyLargeColl = client.db(DB_NAME).collection('bench_find_many_large_ts_mc');
+  results.push(await runBenchmark(
+    'find_many_large', 'multi_doc',
+    async () => {
+      await client.runCommand(DB_NAME, { drop: 'bench_find_many_large_ts_mc' }).catch(() => {});
+      const docs = Array.from({ length: 10 }, () => ({ ...largeDoc, _id: newId() }));
+      await findManyLargeColl.insertMany(docs);
+    },
+    async () => {},
+    async () => {
+      await findManyLargeColl.find({});
+    },
+    async () => {},
+    async () => {},
+    largeSize * 10, 10,
+  ));
 
   // Save results
   const outputPath = join(RESULTS_DIR, 'typescript_mongocore.json');

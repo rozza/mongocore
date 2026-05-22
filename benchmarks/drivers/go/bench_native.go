@@ -184,6 +184,15 @@ func runBenchmark(
 	return result
 }
 
+func isQuickMode() bool {
+	for _, arg := range os.Args[1:] {
+		if arg == "--quick" {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	fmt.Println("=== Go MongoDB native driver benchmarks ===")
 
@@ -196,6 +205,13 @@ func main() {
 	var config Config
 	if err := json.Unmarshal(configBytes, &config); err != nil {
 		panic(err)
+	}
+
+	if isQuickMode() {
+		config.WarmupIters["go"] = 0
+		config.MinTimeSecs = 0
+		config.MaxIterations = 1
+		config.MaxTimeSecs = 5
 	}
 
 	// Load test documents
@@ -387,6 +403,69 @@ func main() {
 			return db.Collection("bench_find_many").Drop(context.Background())
 		},
 		smallSize*10_000, 10_000, config,
+	))
+
+	// Bulk Insert Large (10 x ~2.75MB docs per iteration)
+	results = append(results, runBenchmark(
+		"bulk_insert_large", "multi_doc",
+		func(db *mongo.Database) error { return nil },
+		func(db *mongo.Database) error {
+			return db.Collection("bench_bulk_large").Drop(context.Background())
+		},
+		func(db *mongo.Database) error {
+			docs := make([]interface{}, 10)
+			for i := 0; i < 10; i++ {
+				doc := bson.M{"_id": bson.NewObjectID()}
+				for k, v := range largeDoc {
+					if k != "_id" {
+						doc[k] = v
+					}
+				}
+				docs[i] = doc
+			}
+			_, err := db.Collection("bench_bulk_large").InsertMany(context.Background(), docs)
+			return err
+		},
+		func(db *mongo.Database) error { return nil },
+		func(db *mongo.Database) error { return nil },
+		largeSize*10, 10, config,
+	))
+
+	// Find Many Large (10 x ~2.75MB docs)
+	results = append(results, runBenchmark(
+		"find_many_large", "multi_doc",
+		func(db *mongo.Database) error {
+			coll := db.Collection("bench_find_many_large")
+			coll.Drop(context.Background())
+			docs := make([]interface{}, 10)
+			for i := 0; i < 10; i++ {
+				doc := bson.M{"_id": bson.NewObjectID()}
+				for k, v := range largeDoc {
+					if k != "_id" {
+						doc[k] = v
+					}
+				}
+				docs[i] = doc
+			}
+			_, err := coll.InsertMany(context.Background(), docs)
+			return err
+		},
+		func(db *mongo.Database) error { return nil },
+		func(db *mongo.Database) error {
+			coll := db.Collection("bench_find_many_large")
+			cursor, err := coll.Find(context.Background(), bson.M{})
+			if err != nil {
+				return err
+			}
+			defer cursor.Close(context.Background())
+			var results []bson.M
+			return cursor.All(context.Background(), &results)
+		},
+		func(db *mongo.Database) error { return nil },
+		func(db *mongo.Database) error {
+			return db.Collection("bench_find_many_large").Drop(context.Background())
+		},
+		largeSize*10, 10, config,
 	))
 
 	// Save results

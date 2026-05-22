@@ -18,10 +18,12 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 RESULTS_DIR = Path(__file__).parent.parent.parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
 
-WARMUP = CONFIG["warmup_iterations"]["python"]
-MIN_TIME = CONFIG["min_time_secs"]
-MAX_ITERS = CONFIG["max_iterations"]
-MAX_TIME = CONFIG["max_time_secs"]
+QUICK_MODE = "--quick" in sys.argv
+
+WARMUP = 0 if QUICK_MODE else CONFIG["warmup_iterations"]["python"]
+MIN_TIME = 0 if QUICK_MODE else CONFIG["min_time_secs"]
+MAX_ITERS = 1 if QUICK_MODE else CONFIG["max_iterations"]
+MAX_TIME = 5 if QUICK_MODE else CONFIG["max_time_secs"]
 DB_NAME = CONFIG["database"]
 
 

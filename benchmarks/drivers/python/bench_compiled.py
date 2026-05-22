@@ -17,11 +17,14 @@ RESULTS_DIR.mkdir(exist_ok=True)
 # For the Python benchmark, we measure via the search/compiled_query client method
 
 
+QUICK_MODE = "--quick" in sys.argv
+
+
 async def bench_compiled_cache_hit():
     """Measure cache hit performance — same query repeated."""
     from mongocore import MongoClient
 
-    async with MongoClient("localhost:50051") as client:
+    async with MongoClient("localhost:50051", transport="grpc") as client:
         coll = client["sample_restaurants"]["restaurants"]
 
         # First call — cold (may hit LLM or fail gracefully)
@@ -31,8 +34,9 @@ async def bench_compiled_cache_hit():
             pass
 
         # Now benchmark the cached path
+        iterations = 1 if QUICK_MODE else 1000
         times = []
-        for _ in range(1000):
+        for _ in range(iterations):
             start = time.perf_counter()
             try:
                 await coll.search("find Italian restaurants", limit=1)

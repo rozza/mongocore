@@ -184,9 +184,18 @@ public class BenchMongocore {
     public static void main(String[] args) throws Exception {
         System.out.println("=== MongoCore+Java benchmarks ===");
 
+        boolean quickMode = java.util.Arrays.asList(args).contains("--quick");
+
         // Load config
         Path configPath = Paths.get("..", "common.json");
         Config config = GSON.fromJson(new FileReader(configPath.toFile()), Config.class);
+
+        if (quickMode) {
+            config.warmup_iterations.put("java", 0);
+            config.min_time_secs = 0;
+            config.max_iterations = 1;
+            config.max_time_secs = 5;
+        }
 
         // Load test documents
         Path dataDir = Paths.get("..", "..", "data");
@@ -336,13 +345,53 @@ public class BenchMongocore {
                 smallSize * 2_000, 2_000, config
         ));
 
-        // Bulk Insert Large — SKIPPED: exceeds gRPC default 4MB message limit (10 x 2.75MB = 27.5MB)
-        // TODO: Increase gRPC max_message_size in MongoCore config to enable this benchmark
-        System.out.println("  bulk_insert_large: SKIPPED (exceeds gRPC 4MB message limit)");
+        // Bulk Insert Large (10 x ~2.75MB docs — enabled with 64MB message limit)
+        results.add(runBenchmark(
+                "bulk_insert_large", "multi_doc",
+                c -> {},
+                c -> {
+                    try {
+                        c.runCommand(config.database, new Document("drop", "bench_bulk_large_mc"), false);
+                    } catch (Exception ignored) {}
+                },
+                c -> {
+                    List<Document> docs = new ArrayList<>(10);
+                    for (int i = 0; i < 10; i++) {
+                        Document doc = new Document(largeDoc);
+                        doc.put("_id", new ObjectId().toHexString());
+                        docs.add(doc);
+                    }
+                    c.getDatabase(config.database).getCollection("bench_bulk_large_mc").insertMany(docs);
+                },
+                c -> {},
+                c -> {},
+                largeSize * 10, 10, config
+        ));
 
-        // Find Many Large — SKIPPED: 10 x 2.75MB = 27.5MB response exceeds gRPC 4MB limit
-        // TODO: Implement streaming/pagination in MongoCore Find RPC to handle large result sets
-        System.out.println("  find_many_large: SKIPPED (response exceeds gRPC 4MB message limit)");
+        // Find Many Large (10 x ~2.75MB docs — enabled with 64MB message limit)
+        results.add(runBenchmark(
+                "find_many_large", "multi_doc",
+                c -> {
+                    try {
+                        c.runCommand(config.database, new Document("drop", "bench_find_many_large_mc"), false);
+                    } catch (Exception ignored) {}
+                    List<Document> docs = new ArrayList<>(10);
+                    for (int i = 0; i < 10; i++) {
+                        Document doc = new Document(largeDoc);
+                        doc.put("_id", new ObjectId().toHexString());
+                        docs.add(doc);
+                    }
+                    c.getDatabase(config.database).getCollection("bench_find_many_large_mc").insertMany(docs);
+                },
+                c -> {},
+                c -> {
+                    c.getDatabase(config.database).getCollection("bench_find_many_large_mc")
+                            .find(new Document());
+                },
+                c -> {},
+                c -> {},
+                largeSize * 10, 10, config
+        ));
 
         // Save results
         Path resultsDir = Paths.get("..", "..", "results");

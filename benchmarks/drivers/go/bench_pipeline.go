@@ -164,6 +164,15 @@ func runBenchmark(
 	return result
 }
 
+func isQuickMode() bool {
+	for _, arg := range os.Args[1:] {
+		if arg == "--quick" {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	fmt.Println("=== MongoCore+Go Pipeline benchmarks ===")
 
@@ -174,6 +183,13 @@ func main() {
 	}
 	var config Config
 	json.Unmarshal(configData, &config)
+
+	if isQuickMode() {
+		config.WarmupIters["go"] = 0
+		config.MinTimeSecs = 0
+		config.MaxIterations = 1
+		config.MaxTimeSecs = 5
+	}
 
 	dataDir := filepath.Join("..", "..", "data")
 	smallDocData, _ := os.ReadFile(filepath.Join(dataDir, "small_doc.json"))

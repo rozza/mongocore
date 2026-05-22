@@ -772,6 +772,7 @@ dependencies = [
  "ciborium",
  "clap",
  "criterion-plot",
+ "futures",
  "is-terminal",
  "itertools 0.10.5",
  "num-traits",
@@ -784,6 +785,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tinytemplate",
+ "tokio",
  "walkdir",
 ]
 
@@ -2301,8 +2303,10 @@ dependencies = [
  "async-trait",
  "axum 0.8.9",
  "bson 2.15.0",
+ "bytes",
  "chrono",
  "clap",
+ "crossbeam-queue",
  "dashmap",
  "futures",
  "glob",
@@ -2340,6 +2344,7 @@ name = "mongocore-bench"
 version = "0.1.0"
 dependencies = [
  "bson 2.15.0",
+ "bytes",
  "criterion",
  "mongocore",
  "serde_json",

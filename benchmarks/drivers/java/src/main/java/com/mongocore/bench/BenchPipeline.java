@@ -162,8 +162,17 @@ public class BenchPipeline {
     public static void main(String[] args) throws Exception {
         System.out.println("=== MongoCore+Java Pipeline benchmarks ===");
 
+        boolean quickMode = java.util.Arrays.asList(args).contains("--quick");
+
         Path configPath = Paths.get("..", "common.json");
         Config config = GSON.fromJson(new FileReader(configPath.toFile()), Config.class);
+
+        if (quickMode) {
+            config.warmup_iterations.put("java", 0);
+            config.min_time_secs = 0;
+            config.max_iterations = 1;
+            config.max_time_secs = 5;
+        }
 
         Path dataDir = Paths.get("..", "..", "data");
         String smallDocJson = Files.readString(dataDir.resolve("small_doc.json"));
