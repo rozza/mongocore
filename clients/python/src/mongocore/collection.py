@@ -13,6 +13,11 @@ class Collection:
         self._database = database
         self._name = name
 
+    @property
+    def _binary(self):
+        """Return the binary transport if the client is using it, else None."""
+        return self._client._binary_transport
+
     def _encode_doc(self, doc: dict) -> bytes:
         """Encode a Python dict to BSON bytes."""
         return encode(doc)
@@ -56,6 +61,8 @@ class Collection:
 
     async def find_one(self, filter: Optional[dict] = None) -> Optional[dict]:
         """Find a single document."""
+        if self._binary:
+            return self._binary.find_one(self._database, self._name, filter or {})
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.FindOne(mongocore_pb2.FindOneRequest(
@@ -69,6 +76,8 @@ class Collection:
 
     async def insert_one(self, document: dict) -> str:
         """Insert a single document. Returns the inserted ID."""
+        if self._binary:
+            return self._binary.insert_one(self._database, self._name, document)
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.Insert(mongocore_pb2.InsertRequest(
@@ -80,6 +89,10 @@ class Collection:
 
     async def insert_many(self, documents: list[dict]) -> list[str]:
         """Insert multiple documents. Returns list of inserted IDs."""
+        if self._binary:
+            count = self._binary.insert_many(self._database, self._name, documents)
+            # Binary transport returns count, not IDs; generate placeholder IDs
+            return [f"binary_{i}" for i in range(count)]
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.InsertMany(mongocore_pb2.InsertManyRequest(
@@ -91,6 +104,8 @@ class Collection:
 
     async def update_one(self, filter: dict, update: dict) -> dict:
         """Update a single document. Returns {matched_count, modified_count}."""
+        if self._binary:
+            return self._binary.update_one(self._database, self._name, filter, update)
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.Update(mongocore_pb2.UpdateRequest(
@@ -103,6 +118,8 @@ class Collection:
 
     async def update_many(self, filter: dict, update: dict) -> dict:
         """Update multiple documents."""
+        if self._binary:
+            return self._binary.update_many(self._database, self._name, filter, update)
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.UpdateMany(mongocore_pb2.UpdateManyRequest(
@@ -115,6 +132,8 @@ class Collection:
 
     async def delete_one(self, filter: dict) -> int:
         """Delete a single document. Returns deleted count."""
+        if self._binary:
+            return self._binary.delete_one(self._database, self._name, filter)
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.Delete(mongocore_pb2.DeleteRequest(
@@ -126,6 +145,8 @@ class Collection:
 
     async def delete_many(self, filter: dict) -> int:
         """Delete multiple documents. Returns deleted count."""
+        if self._binary:
+            return self._binary.delete_many(self._database, self._name, filter)
         from .generated import mongocore_pb2
         stub = self._get_stub()
         response = await stub.DeleteMany(mongocore_pb2.DeleteManyRequest(
@@ -228,6 +249,8 @@ class Collection:
 
     async def count_documents(self, filter: Optional[dict] = None) -> int:
         """Count documents matching the filter."""
+        if self._binary:
+            return self._binary.count_documents(self._database, self._name, filter)
         import json
         from .generated import mongocore_pb2
         stub = self._get_stub()

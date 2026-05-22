@@ -21,6 +21,11 @@ class MongoClient:
       3. MONGOCORE_ADDRESS env var → TCP
       4. localhost:50051 → TCP
 
+    Transport selection (via `transport` parameter or MONGOCORE_TRANSPORT env var):
+      - "auto" (default): prefer binary UDS if available, fall back to gRPC
+      - "binary": use binary UDS transport only (raises if unavailable)
+      - "grpc": use gRPC transport only (original behavior)
+
     Usage:
         # Auto-discover (prefers UDS, falls back to TCP)
         client = MongoClient()
@@ -30,6 +35,9 @@ class MongoClient:
 
         # Explicit TCP
         client = MongoClient(address="custom-host:50051")
+
+        # Force binary transport
+        client = MongoClient(transport="binary")
     """
 
     def __init__(
@@ -39,26 +47,66 @@ class MongoClient:
         socket_path: Optional[str] = None,
         auto_spawn: bool = False,
         max_message_size: int = 64 * 1024 * 1024,
+        transport: Optional[str] = None,
     ):
         self._address = address
         self._socket_path = socket_path
         self._auto_spawn = auto_spawn
         self._max_message_size = max_message_size
+        self._transport_preference = transport or os.environ.get("MONGOCORE_TRANSPORT", "auto")
         self._sidecar = None
         self._channel = None
         self._transport = None
+        self._binary_transport = None
 
     @property
     def transport(self) -> Optional[str]:
-        """The transport in use after connect(): 'uds' or 'tcp'."""
+        """The transport in use after connect(): 'binary', 'uds', or 'tcp'."""
         return self._transport
 
+    @property
+    def binary(self):
+        """Access the binary transport directly (for synchronous low-level ops).
+
+        Returns the BinaryTransport instance if connected via binary transport,
+        otherwise None.
+        """
+        return self._binary_transport
+
     async def connect(self):
-        """Connect to the MongoCore sidecar."""
+        """Connect to the MongoCore sidecar.
+
+        When transport preference is "auto", tries binary UDS first, then gRPC.
+        When "binary", uses only binary UDS.
+        When "grpc", uses only gRPC.
+        """
         if self._auto_spawn:
             self._sidecar = SidecarManager()
             await self._sidecar.ensure_running()
 
+        pref = self._transport_preference.lower()
+
+        # Try binary transport
+        if pref in ("auto", "binary"):
+            from .binary_transport import BinaryTransport
+            if BinaryTransport.is_available():
+                try:
+                    self._binary_transport = BinaryTransport()
+                    self._binary_transport.connect()
+                    self._transport = "binary"
+                    return self
+                except Exception:
+                    self._binary_transport = None
+                    if pref == "binary":
+                        raise
+
+        if pref == "binary":
+            raise RuntimeError(
+                "Binary transport requested but socket not available. "
+                "Ensure MongoCore is running with binary UDS enabled."
+            )
+
+        # Fall back to gRPC
         options = [
             ("grpc.max_send_message_length", self._max_message_size),
             ("grpc.max_receive_message_length", self._max_message_size),
@@ -101,6 +149,9 @@ class MongoClient:
 
     async def close(self):
         """Close the connection."""
+        if self._binary_transport:
+            self._binary_transport.close()
+            self._binary_transport = None
         if self._channel:
             await self._channel.close()
         if self._sidecar:
@@ -126,6 +177,8 @@ class MongoClient:
 
     async def run_command(self, database: str, command: dict, allow_all: bool = False) -> dict:
         """Execute an arbitrary MongoDB command via raw passthrough."""
+        if self._binary_transport:
+            return self._binary_transport.run_command(database, command)
         from bson import encode, decode
         from .generated import mongocore_pb2, mongocore_pb2_grpc, types_pb2
         stub = mongocore_pb2_grpc.MongoCoreStub(self.channel)

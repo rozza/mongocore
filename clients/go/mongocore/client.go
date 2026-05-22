@@ -105,6 +105,12 @@ func MongoClientWithSocket(socketPath string) *Client {
 	return &Client{socketPath: socketPath}
 }
 
+// MongoClientBinary creates a client that uses the binary UDS transport.
+// If socketPath is empty, it uses MONGOCORE_BINARY_SOCKET_PATH env or the default.
+func MongoClientBinary(socketPath string) (*BinaryTransport, error) {
+	return NewBinaryTransport(socketPath)
+}
+
 
 func (c *Client) resolveTarget() string {
 	if c.socketPath != "" {

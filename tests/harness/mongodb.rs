@@ -40,6 +40,11 @@ fn test_config() -> Config {
         pipeline_max_concurrency: 20,
         web_ui_enabled: true,
         web_ui_port: 27999,
+        binary_socket_path: "/tmp/mongocore.bin.sock".to_string(),
+        binary_socket_permissions: 0o600,
+        binary_transport_enabled: true,
+        binary_max_frame_size: 64 * 1024 * 1024,
+        binary_max_concurrent: 64,
     }
 }
 

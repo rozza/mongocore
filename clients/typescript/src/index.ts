@@ -1,4 +1,5 @@
 export { MongoClient } from './client';
+export { BinaryTransport, BinaryTransportPool } from './binary-transport';
 export { Collection, ChangeStream } from './collection';
 export { Database } from './database';
 export type { FindOptions, UpdateResult, InsertResult, InsertManyResult, Document, ChangeEvent, PipelineResult, TransactionStepResult, TransactionPipelineResult } from './types';

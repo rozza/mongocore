@@ -11,4 +11,5 @@ pub mod search;
 pub mod tenant;
 pub mod ingestion;
 pub mod voyage;
+pub mod transport;
 pub mod web_ui;

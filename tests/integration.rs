@@ -51,3 +51,6 @@ mod mcp_stdio_test;
 
 #[path = "integration/transaction_pipeline_test.rs"]
 mod transaction_pipeline_test;
+
+#[path = "integration/binary_transport_test.rs"]
+mod binary_transport_test;

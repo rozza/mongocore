@@ -5,9 +5,9 @@ MongoCore is an AI-native MongoDB driver implemented as a Rust sidecar, serving 
 ## Architecture
 
 ```
-App (any lang) ──gRPC──▶ MongoCore Sidecar (Rust) ──Wire Protocol──▶ MongoDB
-AI Agent ───────MCP────▶        │                  ──REST API──────▶ Voyage AI
-                                └──Pluggable LLM──▶ Claude / OpenAI
+App (any lang) ──Binary UDS──▶ MongoCore Sidecar (Rust) ──Wire Protocol──▶ MongoDB
+App (any lang) ──gRPC─────────▶        │                  ──REST API──────▶ Voyage AI
+AI Agent ───────MCP───────────▶        └──Pluggable LLM──▶ Claude / OpenAI
 ```
 
 Key directories:
@@ -80,6 +80,7 @@ cd clients/java && protoc --java_out=src/main/java --grpc-java_out=src/main/java
 | `just test-clients` | Client integration tests (~137) | Docker MongoDB + running sidecar |
 | `just test-llm` | Compiled query LLM tests (~27) | Docker MongoDB with sample data + LLM configured |
 | `just test-all` | Everything | All of the above |
+| `just bench-transport` | Binary transport benchmarks | Docker MongoDB + running sidecar |
 
 **Starting MongoDB for tests:**
 ```bash
@@ -94,6 +95,7 @@ just docker-down  # stop when done
 - **Before committing:** `cargo build` must produce ZERO warnings AND `cargo test --lib` must pass (non-negotiable)
 - **Before PR:** `cargo test --test integration` must also pass
 - **After proto changes:** verify `cargo build` succeeds (proves proto compiles)
+- **After adding new opcodes:** verify binary transport dispatch compiles and unit tests pass
 
 ### Zero Warnings Policy
 
@@ -118,9 +120,12 @@ End-to-end workflow when adding a new gRPC RPC:
 6. Add MCP tool handler in `src/mcp/handler.rs`
 7. Add safety rules in `src/mcp/safety.rs` (if it's a write operation)
 8. Write integration test in `tests/integration/`
-9. Regenerate all client stubs (see Proto Workflow above)
-10. Add client method to each language client (`clients/{python,typescript,go,java}/`)
-11. Update MCP tool count assertion in `tests/integration/mcp_test.rs`
+9. Add opcode variant to `src/transport/frame.rs` Opcode enum
+10. Add envelope parsing case in `src/transport/codec.rs` parse_envelope()
+11. Add dispatch case in `src/transport/dispatch.rs` dispatch()
+12. Regenerate all client stubs (see Proto Workflow above)
+13. Add client method to each language client (`clients/{python,typescript,go,java}/`)
+14. Update MCP tool count assertion in `tests/integration/mcp_test.rs`
 
 ## Adding a Config Field
 
@@ -198,6 +203,7 @@ Use `just` commands where available:
 - `just docker-up` / `just docker-down` — manage test MongoDB container
 - `just proto-gen` — regenerate proto stubs for all languages
 - `just release-local` — build optimized binary
+- `just bench-transport` — binary transport performance benchmarks (needs running sidecar)
 
 ## Don'ts
 
@@ -210,11 +216,12 @@ Use `just` commands where available:
 
 ## Testing Rules
 
-- Every gRPC RPC must have a corresponding integration test in each client library (Python, TypeScript, Go, Java)
-- Client integration tests must produce verbose per-test output (no silent/quiet modes)
-- New tests should follow the existing pattern in each client's test file
+- **All 4 client libraries (Python, TypeScript, Go, Java) must have identical test coverage.** Every operation in the MongoCore API must be tested in every client, over both transports (gRPC and binary UDS). No client gets ahead or falls behind — if you add a test to one, add it to all four in the same commit.
+- **Both transports:** Tests for operations supported by the binary transport run against both gRPC and binary UDS. Operations only available via gRPC (transactions, ingestion, change streams, search, pipeline) run against gRPC only and skip gracefully on binary.
+- **When adding a new operation:** add the Rust integration test in `tests/integration/binary_transport_test.rs`, implement in all 4 client libraries, and add matching tests — all in the same commit.
 - Use unique collection names per test to avoid interference
-- When adding a new gRPC RPC, add integration tests to ALL 4 client test suites in the same commit
+- Client integration tests must produce verbose per-test output (no silent/quiet modes)
+- **Benchmark parity:** All driver benchmarks (native, gRPC, binary) must run the same set of scenarios across all 4 languages. If a benchmark exists in one language, it must exist in all. Use `just bench-validate` to verify all benchmarks pass before committing changes. The canonical benchmark set is: run_command, find_one_by_id, insert_one_small, insert_one_large, bulk_insert_small, bulk_insert_large, find_many, find_many_large.
 
 ## Project Layout
 
@@ -232,6 +239,7 @@ src/
 ├── mcp/                 # axum HTTP server, JSON-RPC handler, tools, safety, resources
 │   ├── codegen/         # Code generation (detect, query_gen, model_gen, index_gen, templates)
 │   └── skills/          # Skill definitions and registry
+├── transport/           # Binary UDS transport (frame, buffer pool, dispatch, codec)
 ├── compiled/            # NL→MQL, cache hierarchy, LLM providers
 ├── web_ui/              # Web dashboard UI (assets, handlers, server)
 ├── search/              # Vector, fulltext, fallback chain
@@ -245,6 +253,10 @@ clients/
 ├── go/                  # Go client (io.Closer streams)
 └── java/                # Java client (AutoCloseable, try-with-resources)
 tests/integration/       # Integration tests (one file per subsystem)
+benchmarks/
+├── rust/benches/        # Criterion benchmarks (transport, cache, pipeline, etc.)
+├── drivers/             # Driver comparison benchmarks
+└── results/             # Benchmark result data
 docs/
 ├── design/specs/        # Design specifications
 ├── design/plans/        # Implementation plans
